@@ -80,7 +80,7 @@ async function syncMitGitHub() {
     const payload = {notizen:notizen,woerter:woerter};
     const body = {message:"NotizZettel Auto-Sync",content:btoa(unescape(encodeURIComponent(JSON.stringify(payload)))),sha:sha||undefined};
     let putRes = await fetch(url,{method:"PUT",headers:auth,body:JSON.stringify(body)});
-    if(putRes.ok) { alert("Erfolgreich auf GitHub gesichert!"); } else { alert("Fehler beim Hochladen!"); }
+    if(putRes.ok) { alert("Erfolgreich auf GitHub gesichert!"); } else { alert("Fehler beim Hochladen!\nStatus: " + putRes.status + "\n\n" + await putRes.text()); }
   } catch(e) { alert("Verbindungsfehler: "+e.message); }
 }
 function wortMerken(text){
