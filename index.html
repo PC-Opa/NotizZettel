@@ -65,18 +65,74 @@ function saveGitConfig(){
   localStorage.setItem(KEY_GIT,JSON.stringify(gitConfig));alert("Zugangsdaten lokal gespeichert!");toggleGit();
 }
 async function syncMitGitHub() {
-  if(!gitConfig.user||!gitConfig.repo||!gitConfig.token){alert("Bitte zuerst GitHub-Zugangsdaten ausfüllen!");toggleGit();return;}
-  const url=`https://api.github.com/repos/${gitConfig.user}/${gitConfig.repo}/contents/daten.json`;
-  const auth={"Authorization":`token ${gitConfig.token}`,"Accept":"application/vnd.github.v3+json"};
+
+  if(!gitConfig.user || !gitConfig.repo || !gitConfig.token) {
+    alert("Bitte zuerst GitHub-Zugangsdaten ausfüllen!");
+    toggleGit();
+    return;
+  }
+
+  const url = `https://api.github.com/repos/${gitConfig.user}/${gitConfig.repo}/contents/daten.json`;
+
+  const auth = {
+    "Authorization": `token ${gitConfig.token}`,
+    "Accept": "application/vnd.github.v3+json"
+  };
+
   try {
-    let res = await fetch(url,{headers:auth});let sha = "";
+
+    let sha = "";
+
+    let res = await fetch(url, {headers: auth});
+
     if(res.status === 200) {
-      let fileData = await res.json();sha = fileData.sha;let remoteData = JSON.parse(atob(fileData.content));
-      if(confirm("Daten von GitHub laden? (Abbrechen überschreibt GitHub mit lokalen Daten)")) {
-        notizen = remoteData.notizen || [];woerter = remoteData.woerter || [];speichernNotizen();speichernWoerter();render();
-        alert("Erfolgreich von GitHub geladen!"); return;
-      }
+
+      let fileData = await res.json();
+      sha = fileData.sha;
+
     }
+
+    const payload = {
+      notizen: notizen,
+      woerter: woerter
+    };
+
+    const body = {
+      message: "NotizZettel Synchronisation",
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload)))),
+      sha: sha || undefined
+    };
+
+    let putRes = await fetch(url, {
+      method: "PUT",
+      headers: auth,
+      body: JSON.stringify(body)
+    });
+
+    if(putRes.ok) {
+
+      alert("Synchronisation erfolgreich gespeichert!");
+
+    } else {
+
+      alert(
+        "Fehler beim Speichern!\nStatus: " +
+        putRes.status +
+        "\n\n" +
+        await putRes.text()
+      );
+
+    }
+
+  }
+
+  catch(e) {
+
+    alert("Verbindungsfehler: " + e.message);
+
+  }
+
+}
     const payload = {notizen:notizen,woerter:woerter};
     const body = {message:"NotizZettel Auto-Sync",content:btoa(unescape(encodeURIComponent(JSON.stringify(payload)))),sha:sha||undefined};
     let putRes = await fetch(url,{method:"PUT",headers:auth,body:JSON.stringify(body)});
